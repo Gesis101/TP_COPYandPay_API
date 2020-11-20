@@ -41,22 +41,24 @@ class PaymentController extends Controller
             return curl_error($ch);
         }
         curl_close($ch);
+        $this->storeData($amount, $reference);
         return response()->json(json_decode($responseData));
     }
 
-    public function store($inputAmount, $inputReference){
-     //   $id = Auth::id();
-       // $user = DB::table('users')->where('id', $id);
-        $pay = DB::table('payment_history')->insert(
-            [
-                'amount' => $inputAmount,
-                'reference' => $inputReference,
-                'result' => true,
-                'transactionID' => 123123
-            ]
-        );
+    public function storeData($amount, $ref){
+        $payment = new PaymentHistory;
+        $payment->amount = $amount;
+        $payment->reference = $ref;
+        $payment->user_id = auth()->id();
+        $payment->save();
+    }
 
+    //works, just not for api
+    public function showUserHistory(){
+        $id = Auth::id();
+        $history = PaymentHistory::where('user_id', $id)->get();
 
+        return response()->json($history);
     }
 
 }

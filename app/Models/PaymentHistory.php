@@ -9,6 +9,7 @@ class PaymentHistory extends Model
 {
     use HasFactory;
     public $timestamps = true;
+    protected $table = 'payment_history';
     /**
      * The attributes that are mass assignable.
      *
@@ -29,8 +30,8 @@ class PaymentHistory extends Model
     protected $hidden = [
 
     ];
-    /*public function user(){
-        return $this->belongsTo('App\Models\User');
+    public function user(){
+        return $this->belongsTo('App\Models\User', 'user_id');
     }
-    */
+
 }
