@@ -27,8 +27,8 @@
       </div>
       <button type="submit"  class="btn btn-primary">Submit</button>
     </form>
-      <div class="mt-5">
-          <div class="h5 text-center">Payment History for '{{ authUser.name }}'</div>
+      <div v-if="history" class="mt-5">
+          <div  class="h5 text-center">Payment History for '{{ authUser.name }}'</div>
           <div  v-for="history in history" :key="history.id" class="alert alert-success" role="alert">
              Date of purchase {{ history.created_at}} . Amount: £{{ history.amount }} . Reference: {{ history.reference }}
           </div>

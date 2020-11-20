@@ -43790,38 +43790,40 @@ var render = function() {
       ]
     ),
     _vm._v(" "),
-    _c(
-      "div",
-      { staticClass: "mt-5" },
-      [
-        _c("div", { staticClass: "h5 text-center" }, [
-          _vm._v("Payment History for '" + _vm._s(_vm.authUser.name) + "'")
-        ]),
-        _vm._v(" "),
-        _vm._l(_vm.history, function(history) {
-          return _c(
-            "div",
-            {
-              key: history.id,
-              staticClass: "alert alert-success",
-              attrs: { role: "alert" }
-            },
-            [
-              _vm._v(
-                "\n           Date of purchase " +
-                  _vm._s(history.created_at) +
-                  " . Amount: £" +
-                  _vm._s(history.amount) +
-                  " . Reference: " +
-                  _vm._s(history.reference) +
-                  "\n        "
+    _vm.history
+      ? _c(
+          "div",
+          { staticClass: "mt-5" },
+          [
+            _c("div", { staticClass: "h5 text-center" }, [
+              _vm._v("Payment History for '" + _vm._s(_vm.authUser.name) + "'")
+            ]),
+            _vm._v(" "),
+            _vm._l(_vm.history, function(history) {
+              return _c(
+                "div",
+                {
+                  key: history.id,
+                  staticClass: "alert alert-success",
+                  attrs: { role: "alert" }
+                },
+                [
+                  _vm._v(
+                    "\n           Date of purchase " +
+                      _vm._s(history.created_at) +
+                      " . Amount: £" +
+                      _vm._s(history.amount) +
+                      " . Reference: " +
+                      _vm._s(history.reference) +
+                      "\n        "
+                  )
+                ]
               )
-            ]
-          )
-        })
-      ],
-      2
-    )
+            })
+          ],
+          2
+        )
+      : _vm._e()
   ])
 }
 var staticRenderFns = []
