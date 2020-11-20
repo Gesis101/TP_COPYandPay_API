@@ -8,13 +8,13 @@
           <h3 class="pb-2">{{ results.reference }}</h3>
           <button v-on:click="closeAlert()" class="btn btn-danger align-end">Close</button>
       </div>
-    <!--  <div v-if="failed" class="text-center successMsg bg-light rounded shadow">
-          <h3 class="text-danger p-1">Transaction Added</h3>
+     <div v-if="err" class="text-center successMsg bg-light rounded shadow">
+          <h3 class="text-danger p-1">Transaction Failed</h3>
           <h3 class="text-bold pb-1">Result Code: {{ results.code }} </h3>
           <h3 class="text-bold ">Description:</h3>
           <h3 class="pb-2">{{ results.reference }}</h3>
-          <button v-on:click="closeAlert()" class="btn btn-danger align-end">Close</button>
-      </div>-->
+          <button v-on:click="closeErrAlert()" class="btn btn-danger align-end">Close</button>
+      </div>
     <form v-on:submit.prevent="submitPayment" v-on:submit="getUserHistory" class="form text-center pt-5">
       <div class="form-group">
         <label for="amount">Amount £</label>
@@ -29,8 +29,8 @@
     </form>
       <div v-if="history" class="mt-5">
           <div  class="h5 text-center">Payment History for '{{ authUser.name }}'</div>
-          <div  v-for="history in history" :key="history.id" class="alert alert-success" role="alert">
-             Date of purchase {{ history.created_at}} . Amount: £{{ history.amount }} . Reference: {{ history.reference }}
+          <div  v-for="history in history" :key="history.id"  v-bind:class="[history.result === 1 ? 'alert-success' : 'alert-danger']" class="alert " role="alert">
+             Date: {{ history.created_at}} . Amount: £{{ history.amount }} . Reference: {{ history.reference }}
           </div>
       </div>
   </div>
@@ -44,40 +44,40 @@ export default {
         authUser: window.auth_user,
         fields: {},
         errors: {},
+        err: false,
         success: false,
         results: {},
-        history: {}
+        history: {},
     };
   },
   methods: {
+      //Calls Laravel route /submitPayment with user params
     submitPayment() {
       this.errors = {};
       axios
         .get("/submitPayment", { params: {amount: this.fields.amount, referenceID: this.fields.reference}})
         .then((response) => {
           this.fields = {}; //Clear input field values
-          console.log(response.data.result);
-         this.results = {code: response.data.result.code, reference: response.data.result.description}
+          this.results = {code: response.data.result.code, reference: response.data.result.description} //Passes response data to Vue object
           this.success = true;
         })
         .catch((error) => {
-          //Catch any errors during submit
-          console.log(error);
-          if (error.response.status === 422) {
+          //Catch any error during async
             this.errors = error.response.data.errors || {};
-          }
+            this.err = true;
         });
     },
       closeAlert() {
         this.success = false;
       },
+      closeErrAlert(){
+        this.err = false;
+      },
       getUserHistory(){
         axios
           .get('/api/PaymentHistory')
           .then( (res) => {
-              console.log(res.data)
               this.history = res.data;
-              this.history.create_at = moment(res.data.create_at).format('llll');
           }).catch( (err) => {
               console.log(err)
         })

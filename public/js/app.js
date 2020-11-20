@@ -2064,12 +2064,14 @@ __webpack_require__.r(__webpack_exports__);
       authUser: window.auth_user,
       fields: {},
       errors: {},
+      err: false,
       success: false,
       results: {},
       history: {}
     };
   },
   methods: {
+    //Calls Laravel route /submitPayment with user params
     submitPayment: function submitPayment() {
       var _this = this;
 
@@ -2082,31 +2084,29 @@ __webpack_require__.r(__webpack_exports__);
       }).then(function (response) {
         _this.fields = {}; //Clear input field values
 
-        console.log(response.data.result);
         _this.results = {
           code: response.data.result.code,
           reference: response.data.result.description
-        };
+        }; //Passes response data to Vue object
+
         _this.success = true;
       })["catch"](function (error) {
-        //Catch any errors during submit
-        console.log(error);
-
-        if (error.response.status === 422) {
-          _this.errors = error.response.data.errors || {};
-        }
+        //Catch any error during async
+        _this.errors = error.response.data.errors || {};
+        _this.err = true;
       });
     },
     closeAlert: function closeAlert() {
       this.success = false;
     },
+    closeErrAlert: function closeErrAlert() {
+      this.err = false;
+    },
     getUserHistory: function getUserHistory() {
       var _this2 = this;
 
       axios__WEBPACK_IMPORTED_MODULE_0___default.a.get('/api/PaymentHistory').then(function (res) {
-        console.log(res.data);
         _this2.history = res.data;
-        _this2.history.create_at = moment__WEBPACK_IMPORTED_MODULE_1___default()(res.data.create_at).format('llll');
       })["catch"](function (err) {
         console.log(err);
       });
@@ -43707,6 +43707,41 @@ var render = function() {
         )
       : _vm._e(),
     _vm._v(" "),
+    _vm.err
+      ? _c(
+          "div",
+          { staticClass: "text-center successMsg bg-light rounded shadow" },
+          [
+            _c("h3", { staticClass: "text-danger p-1" }, [
+              _vm._v("Transaction Failed")
+            ]),
+            _vm._v(" "),
+            _c("h3", { staticClass: "text-bold pb-1" }, [
+              _vm._v("Result Code: " + _vm._s(_vm.results.code) + " ")
+            ]),
+            _vm._v(" "),
+            _c("h3", { staticClass: "text-bold " }, [_vm._v("Description:")]),
+            _vm._v(" "),
+            _c("h3", { staticClass: "pb-2" }, [
+              _vm._v(_vm._s(_vm.results.reference))
+            ]),
+            _vm._v(" "),
+            _c(
+              "button",
+              {
+                staticClass: "btn btn-danger align-end",
+                on: {
+                  click: function($event) {
+                    return _vm.closeErrAlert()
+                  }
+                }
+              },
+              [_vm._v("Close")]
+            )
+          ]
+        )
+      : _vm._e(),
+    _vm._v(" "),
     _c(
       "form",
       {
@@ -43804,12 +43839,15 @@ var render = function() {
                 "div",
                 {
                   key: history.id,
-                  staticClass: "alert alert-success",
+                  staticClass: "alert ",
+                  class: [
+                    history.result === 1 ? "alert-success" : "alert-danger"
+                  ],
                   attrs: { role: "alert" }
                 },
                 [
                   _vm._v(
-                    "\n           Date of purchase " +
+                    "\n           Date: " +
                       _vm._s(history.created_at) +
                       " . Amount: £" +
                       _vm._s(history.amount) +

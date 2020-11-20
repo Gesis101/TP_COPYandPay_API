@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 
 class PaymentController extends Controller
@@ -37,18 +38,25 @@ class PaymentController extends Controller
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);// this should be set to true in production
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $responseData = curl_exec($ch);
+        $responseData = response()->json(json_decode($responseData));
         if (curl_errno($ch)) {
             return curl_error($ch);
         }
         curl_close($ch);
-        $this->storeData($amount, $reference);
-        return response()->json(json_decode($responseData));
+
+        if(str_contains(json_encode($responseData->original->result->description), 'successfully')){
+            $this->storeData($amount, $reference, true);
+        }else{
+            $this->storeData($amount, $reference, false);
+        }
+        return $responseData;
     }
 
-    public function storeData($amount, $ref){
+    public function storeData($amount, $ref, $result){
         $payment = new PaymentHistory;
         $payment->amount = $amount;
         $payment->reference = $ref;
+        $payment->result = $result;
         $payment->user_id = auth()->id();
         $payment->save();
     }
