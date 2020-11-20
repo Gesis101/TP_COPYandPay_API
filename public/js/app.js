@@ -2065,7 +2065,8 @@ __webpack_require__.r(__webpack_exports__);
       fields: {},
       errors: {},
       success: false,
-      results: {}
+      results: {},
+      history: {}
     };
   },
   methods: {
@@ -2104,14 +2105,14 @@ __webpack_require__.r(__webpack_exports__);
 
       axios__WEBPACK_IMPORTED_MODULE_0___default.a.get('/api/PaymentHistory').then(function (res) {
         console.log(res.data);
-        _this2.results = res.data;
-        _this2.results.create_at = moment__WEBPACK_IMPORTED_MODULE_1___default()(res.data.create_at).format('llll');
+        _this2.history = res.data;
+        _this2.history.create_at = moment__WEBPACK_IMPORTED_MODULE_1___default()(res.data.create_at).format('llll');
       })["catch"](function (err) {
         console.log(err);
       });
     }
   },
-  beforeMount: function beforeMount() {
+  created: function created() {
     this.getUserHistory();
   }
 });
@@ -43711,10 +43712,13 @@ var render = function() {
       {
         staticClass: "form text-center pt-5",
         on: {
-          submit: function($event) {
-            $event.preventDefault()
-            return _vm.submitPayment($event)
-          }
+          submit: [
+            function($event) {
+              $event.preventDefault()
+              return _vm.submitPayment($event)
+            },
+            _vm.getUserHistory
+          ]
         }
       },
       [
@@ -43788,25 +43792,17 @@ var render = function() {
     _vm._v(" "),
     _c(
       "div",
-      {
-        staticClass: "mt-5",
-        on: {
-          submit: function($event) {
-            $event.preventDefault()
-            return _vm.getUserHistory($event)
-          }
-        }
-      },
+      { staticClass: "mt-5" },
       [
         _c("div", { staticClass: "h5 text-center" }, [
           _vm._v("Payment History for '" + _vm._s(_vm.authUser.name) + "'")
         ]),
         _vm._v(" "),
-        _vm._l(_vm.results, function(history) {
+        _vm._l(_vm.history, function(history) {
           return _c(
             "div",
             {
-              key: _vm.results.id,
+              key: history.id,
               staticClass: "alert alert-success",
               attrs: { role: "alert" }
             },

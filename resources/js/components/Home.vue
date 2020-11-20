@@ -15,7 +15,7 @@
           <h3 class="pb-2">{{ results.reference }}</h3>
           <button v-on:click="closeAlert()" class="btn btn-danger align-end">Close</button>
       </div>-->
-    <form v-on:submit.prevent="submitPayment" class="form text-center pt-5">
+    <form v-on:submit.prevent="submitPayment" v-on:submit="getUserHistory" class="form text-center pt-5">
       <div class="form-group">
         <label for="amount">Amount £</label>
         <input type="number" class="form-control" name="amount" v-model="fields.amount" id="amount" />
@@ -25,11 +25,11 @@
         <label for="referenceID">ReferenceID</label>
         <input type="text" class="form-control" name="referenceID" v-model="fields.reference" id="referenceID" />
       </div>
-      <button type="submit" class="btn btn-primary">Submit</button>
+      <button type="submit"  class="btn btn-primary">Submit</button>
     </form>
-      <div class="mt-5" v-on:submit.prevent="getUserHistory">
+      <div class="mt-5">
           <div class="h5 text-center">Payment History for '{{ authUser.name }}'</div>
-          <div  v-for="history in results" :key="results.id" class="alert alert-success" role="alert">
+          <div  v-for="history in history" :key="history.id" class="alert alert-success" role="alert">
              Date of purchase {{ history.created_at}} . Amount: £{{ history.amount }} . Reference: {{ history.reference }}
           </div>
       </div>
@@ -45,7 +45,8 @@ export default {
         fields: {},
         errors: {},
         success: false,
-        results: {}
+        results: {},
+        history: {}
     };
   },
   methods: {
@@ -75,14 +76,14 @@ export default {
           .get('/api/PaymentHistory')
           .then( (res) => {
               console.log(res.data)
-              this.results = res.data;
-              this.results.create_at = moment(res.data.create_at).format('llll');
+              this.history = res.data;
+              this.history.create_at = moment(res.data.create_at).format('llll');
           }).catch( (err) => {
               console.log(err)
         })
       }
   },
-    beforeMount() {
+    created() {
       this.getUserHistory()
     },
 
