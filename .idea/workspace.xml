@@ -167,7 +167,7 @@
       <workItem from="1605792303479" duration="7991000" />
       <workItem from="1605825369780" duration="300000" />
       <workItem from="1605825682856" duration="255000" />
-      <workItem from="1605827625866" duration="16324000" />
+      <workItem from="1605827625866" duration="18813000" />
     </task>
     <servers />
   </component>
@@ -203,9 +203,10 @@
       <screen x="0" y="25" width="2560" height="1355" />
     </state>
     <state width="1358" height="269" key="GridCell.Tab.0.right/0.25.2560.1355@0.25.2560.1355" timestamp="1605804053757" />
-    <state x="1554" y="305" width="868" height="1018" key="dock-window-1" timestamp="1605847545928">
-      <screen x="0" y="25" width="2560" height="1355" />
+    <state x="674" y="25" width="868" height="965" key="dock-window-1" timestamp="1605876441811">
+      <screen x="0" y="25" width="1680" height="965" />
     </state>
+    <state x="674" y="25" width="868" height="965" key="dock-window-1/0.25.1680.965@0.25.1680.965" timestamp="1605876441811" />
     <state x="1554" y="305" width="868" height="1018" key="dock-window-1/0.25.2560.1355@0.25.2560.1355" timestamp="1605847545928" />
     <state x="438" y="318" width="670" height="676" key="search.everywhere.popup" timestamp="1605847361908">
       <screen x="0" y="25" width="2560" height="1355" />

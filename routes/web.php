@@ -15,7 +15,7 @@ use App\Models\User;
 */
 
 Route::get('/submitPayment', 'App\Http\Controllers\PaymentController@submitPayment');
-Route::get('/test','App\Http\Controllers\PaymentController@showUserHistory');
+Route::get('/api/PaymentHistory','App\Http\Controllers\PaymentController@showUserHistory');
 Route::get('/', function () {
     return view('welcome', [
         'auth_user' => Auth::user()

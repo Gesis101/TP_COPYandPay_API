@@ -27,10 +27,17 @@
       </div>
       <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+      <div class="mt-5" v-on:submit.prevent="getUserHistory">
+          <div class="h5 text-center">Payment History for '{{ authUser.name }}'</div>
+          <div  v-for="history in results" :key="results.id" class="alert alert-success" role="alert">
+             Date of purchase {{ history.created_at}} . Amount: £{{ history.amount }} . Reference: {{ history.reference }}
+          </div>
+      </div>
   </div>
 </template>
 <script>
 import axios from "axios";
+import moment from 'moment';
 export default {
   data: function () {
     return {
@@ -62,7 +69,22 @@ export default {
     },
       closeAlert() {
         this.success = false;
+      },
+      getUserHistory(){
+        axios
+          .get('/api/PaymentHistory')
+          .then( (res) => {
+              console.log(res.data)
+              this.results = res.data;
+              this.results.create_at = moment(res.data.create_at).format('llll');
+          }).catch( (err) => {
+              console.log(err)
+        })
       }
   },
+    beforeMount() {
+      this.getUserHistory()
+    },
+
 };
 </script>

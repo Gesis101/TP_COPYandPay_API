@@ -58,7 +58,7 @@ class PaymentController extends Controller
         $id = Auth::id();
         $history = PaymentHistory::where('user_id', $id)->get();
 
-        return response()->json($history);
+        return response()->json(json_decode($history));
     }
 
 }
