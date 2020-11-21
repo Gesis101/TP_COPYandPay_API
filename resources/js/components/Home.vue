@@ -19,14 +19,14 @@
       <div class="form-group">
         <label for="amount">Amount £</label>
         <input type="number" class="form-control" name="amount" v-model="fields.amount" id="amount" required/>
-          <div v-bind:class="[!uniqueRef ? 'visible' : 'invisible']" class="alert alert-warning" role="alert">
+          <div v-bind:class="[uniqueRef ? 'invisible' : 'visible']" class="alert alert-warning" role="alert">
               Please enter a unique referenceID
           </div>
         <div v-if="errors && errors.name" class="text-danger">{{ errors }}</div>
       </div>
       <div class="form-group">
         <label for="referenceID">ReferenceID</label>
-        <input type="text" class="form-control" name="referenceID" v-model="fields.reference"  v-on:change="uniqueReferenceID" v-on:click="closeRefAlert" id="referenceID" required/>
+        <input type="number" class="form-control" name="referenceID" v-model="fields.reference"   v-on:keyup="uniqueReferenceID" id="referenceID" required/>
       </div>
       <button type="submit"  class="btn btn-primary">Submit</button>
     </form>
@@ -93,6 +93,12 @@ export default {
           for(let i=0; i < this.history.length; i++){
               if(this.history[i].reference == this.fields.reference){
                   this.uniqueRef = false;
+                  console.log('true'+this.history[i].reference)
+                  break;
+              }else {
+                  this.uniqueRef = true
+                  console.log('nh')
+
               }
           }
 

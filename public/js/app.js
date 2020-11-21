@@ -2122,6 +2122,11 @@ __webpack_require__.r(__webpack_exports__);
       for (var i = 0; i < this.history.length; i++) {
         if (this.history[i].reference == this.fields.reference) {
           this.uniqueRef = false;
+          console.log('true' + this.history[i].reference);
+          break;
+        } else {
+          this.uniqueRef = true;
+          console.log('nh');
         }
       }
     }
@@ -43805,7 +43810,7 @@ var render = function() {
             "div",
             {
               staticClass: "alert alert-warning",
-              class: [!_vm.uniqueRef ? "visible" : "invisible"],
+              class: [_vm.uniqueRef ? "invisible" : "visible"],
               attrs: { role: "alert" }
             },
             [
@@ -43838,15 +43843,14 @@ var render = function() {
             ],
             staticClass: "form-control",
             attrs: {
-              type: "text",
+              type: "number",
               name: "referenceID",
               id: "referenceID",
               required: ""
             },
             domProps: { value: _vm.fields.reference },
             on: {
-              change: _vm.uniqueReferenceID,
-              click: _vm.closeRefAlert,
+              keyup: _vm.uniqueReferenceID,
               input: function($event) {
                 if ($event.target.composing) {
                   return
