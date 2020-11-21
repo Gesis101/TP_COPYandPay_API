@@ -167,7 +167,7 @@
       <workItem from="1605792303479" duration="7991000" />
       <workItem from="1605825369780" duration="300000" />
       <workItem from="1605825682856" duration="255000" />
-      <workItem from="1605827625866" duration="28221000" />
+      <workItem from="1605827625866" duration="34421000" />
     </task>
     <servers />
   </component>
@@ -220,6 +220,12 @@
           <url>file://$PROJECT_DIR$/app/Models/User.php</url>
           <line>32</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/resources/js/App.vue</url>
+          <line>15</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

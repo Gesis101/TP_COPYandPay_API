@@ -18,12 +18,15 @@
     <form v-on:submit.prevent="submitPayment" v-on:submit="getUserHistory" class="form text-center pt-5">
       <div class="form-group">
         <label for="amount">Amount £</label>
-        <input type="number" class="form-control" name="amount" v-model="fields.amount" id="amount" />
+        <input type="number" class="form-control" name="amount" v-model="fields.amount" id="amount" required/>
+          <div v-bind:class="[!uniqueRef ? 'visible' : 'invisible']" class="alert alert-warning" role="alert">
+              Please enter a unique referenceID
+          </div>
         <div v-if="errors && errors.name" class="text-danger">{{ errors }}</div>
       </div>
       <div class="form-group">
         <label for="referenceID">ReferenceID</label>
-        <input type="text" class="form-control" name="referenceID" v-model="fields.reference" id="referenceID" />
+        <input type="text" class="form-control" name="referenceID" v-model="fields.reference"  v-on:change="uniqueReferenceID" v-on:click="closeRefAlert" id="referenceID" required/>
       </div>
       <button type="submit"  class="btn btn-primary">Submit</button>
     </form>
@@ -48,6 +51,7 @@ export default {
         success: false,
         results: {},
         history: {},
+        uniqueRef: true
     };
   },
   methods: {
@@ -73,6 +77,9 @@ export default {
       closeErrAlert(){
         this.err = false;
       },
+      closeRefAlert(){
+        this.uniqueRef = true;
+      },
       getUserHistory(){
         axios
           .get('/api/PaymentHistory')
@@ -81,7 +88,16 @@ export default {
           }).catch( (err) => {
               console.log(err)
         })
+      },
+      uniqueReferenceID(){
+          for(let i=0; i < this.history.length; i++){
+              if(this.history[i].reference == this.fields.reference){
+                  this.uniqueRef = false;
+              }
+          }
+
       }
+
   },
     created() {
       this.getUserHistory()

@@ -15,11 +15,10 @@ class CreatePaymentHistoryTable extends Migration
     {
         Schema::create('payment_history', function (Blueprint $table) {
             $table->id();
-            $table->dateTime('created_at');
-            $table->dateTime('updated_at');
+            $table->timestamp();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->decimal('amount');
-            $table->bigInteger('reference');
+            $table->bigInteger('reference')->unique();
             $table->boolean('result');
             $table->string('transactionID')->nullable();
         });

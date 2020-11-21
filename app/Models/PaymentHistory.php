@@ -9,6 +9,7 @@ class PaymentHistory extends Model
 {
     use HasFactory;
     public $timestamps = true;
+    protected $dateFormat = 'Y-m-d-H:i:s';
     protected $table = 'payment_history';
     /**
      * The attributes that are mass assignable.

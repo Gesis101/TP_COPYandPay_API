@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\PaymentHistory;
 use App\Models\User;
+use Carbon\Carbon;
+use Carbon\Traits\Date;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -13,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
-
+    // Curl request to the OPPWA API on each submission
     public function submitPayment(Request $request)
     {
         $amount = $request->input('amount');
@@ -43,8 +45,8 @@ class PaymentController extends Controller
             return curl_error($ch);
         }
         curl_close($ch);
-
-        if(str_contains(json_encode($responseData->original->result->description), 'successfully')){
+        //echo json_encode($responseData->original->result->description);
+        if(str_contains(json_encode($responseData->original->result->description), 'successfully')){ //If response includes 'success', set the result to true.. vice versa.
             $this->storeData($amount, $reference, true);
         }else{
             $this->storeData($amount, $reference, false);
@@ -52,21 +54,29 @@ class PaymentController extends Controller
         return $responseData;
     }
 
+    //Store payment history to Database using the ORM.
     public function storeData($amount, $ref, $result){
         $payment = new PaymentHistory;
         $payment->amount = $amount;
+        $payment->created_at = Carbon::createFromFormat('Y-m-d H:i:s', now());
         $payment->reference = $ref;
         $payment->result = $result;
         $payment->user_id = auth()->id();
         $payment->save();
     }
 
-    //works, just not for api
+    //Gets the ID of the session user, calls one to many & returns json response.
     public function showUserHistory(){
         $id = Auth::id();
         $history = PaymentHistory::where('user_id', $id)->get();
 
         return response()->json(json_decode($history));
+    }
+
+    //
+    public function convertDate($data)
+    {
+        return Carbon::createFromFormat('m/d/Y', $data)->format('Y-m-d');
     }
 
 }

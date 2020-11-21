@@ -2056,6 +2056,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -2067,7 +2070,8 @@ __webpack_require__.r(__webpack_exports__);
       err: false,
       success: false,
       results: {},
-      history: {}
+      history: {},
+      uniqueRef: true
     };
   },
   methods: {
@@ -2102,6 +2106,9 @@ __webpack_require__.r(__webpack_exports__);
     closeErrAlert: function closeErrAlert() {
       this.err = false;
     },
+    closeRefAlert: function closeRefAlert() {
+      this.uniqueRef = true;
+    },
     getUserHistory: function getUserHistory() {
       var _this2 = this;
 
@@ -2110,6 +2117,13 @@ __webpack_require__.r(__webpack_exports__);
       })["catch"](function (err) {
         console.log(err);
       });
+    },
+    uniqueReferenceID: function uniqueReferenceID() {
+      for (var i = 0; i < this.history.length; i++) {
+        if (this.history[i].reference == this.fields.reference) {
+          this.uniqueRef = false;
+        }
+      }
     }
   },
   created: function created() {
@@ -43770,7 +43784,12 @@ var render = function() {
               }
             ],
             staticClass: "form-control",
-            attrs: { type: "number", name: "amount", id: "amount" },
+            attrs: {
+              type: "number",
+              name: "amount",
+              id: "amount",
+              required: ""
+            },
             domProps: { value: _vm.fields.amount },
             on: {
               input: function($event) {
@@ -43781,6 +43800,20 @@ var render = function() {
               }
             }
           }),
+          _vm._v(" "),
+          _c(
+            "div",
+            {
+              staticClass: "alert alert-warning",
+              class: [!_vm.uniqueRef ? "visible" : "invisible"],
+              attrs: { role: "alert" }
+            },
+            [
+              _vm._v(
+                "\n            Please enter a unique referenceID\n        "
+              )
+            ]
+          ),
           _vm._v(" "),
           _vm.errors && _vm.errors.name
             ? _c("div", { staticClass: "text-danger" }, [
@@ -43804,9 +43837,16 @@ var render = function() {
               }
             ],
             staticClass: "form-control",
-            attrs: { type: "text", name: "referenceID", id: "referenceID" },
+            attrs: {
+              type: "text",
+              name: "referenceID",
+              id: "referenceID",
+              required: ""
+            },
             domProps: { value: _vm.fields.reference },
             on: {
+              change: _vm.uniqueReferenceID,
+              click: _vm.closeRefAlert,
               input: function($event) {
                 if ($event.target.composing) {
                   return
