@@ -96,7 +96,9 @@ class PaymentController extends Controller
 
     //Gets the ID of the session user, calls one to many & returns json response.
     public function showUserHistory(){
-        $id = Auth::id();
+        if (Auth::check()) {
+            $id = Auth::id();
+        }
         $history = PaymentHistory::where('user_id', $id)->get();
 
         return response()->json(json_decode($history));

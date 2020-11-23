@@ -1,11 +1,11 @@
 <template>
     <div class="text-2x1 text-gray-800 center_div">
         <div v-bind:class="[status ? 'text-success' : 'text-danger']" class="text-center successMsg2 bg-light rounded shadow">
-            <h3 class="text-success p-1">Checkout Status</h3>
+            <h3 v-bind:class="[status ? 'text-success' : 'text-danger']" class="p-1">Checkout Status</h3>
             <h3 class="text-bold pb-1">Result Code: {{ paymentData.code }}</h3>
             <h3 class="text-bold">Description: {{ paymentData.description }}</h3>
             <h3 class="pb-2"></h3>
-            <button class="btn btn-danger align-end">Close</button>
+            <router-link to="/home" class="btn btn-danger align-end">RETURN</router-link>
         </div>
 
     </div>
@@ -39,24 +39,28 @@ export default {
                 this.paymentData = {description: res.data.result.description, code: res.data.result.code}
                 if (res.data.result.description.includes('successfully')){
                     this.status = 1
-                   console.log("its lit")
                     this.addToHistory();
                 } else {
                     this.addToHistory();
-                    console.log("its not lit")
-``
+                    this.status = 0``
                 }
             })
         },
         addToHistory(){
             axios
-                .get("/api/createHistory?amount="+this.amount+"?reference="+this.references+"?status="+this.status)
-            .then(res => {
-                console.log(res)
-                this.added = true;
-            }).catch(err => {
-                this.added = false;
-                console.log(err)
+                .get("/api/createHistory", {
+                    params: {
+                        amount: this.amount,
+                        reference: this.references,
+                        status: this.status
+                    }
+                })
+                .then(res => {
+                    console.log(res)
+                    this.added = true;
+                }).catch(err => {
+                    this.added = false;
+                    console.log(err)
 
             })
         }

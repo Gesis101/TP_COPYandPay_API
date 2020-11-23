@@ -15,6 +15,7 @@ use App\Models\User;
 | contains the "web" middleware group. Now create something great!
 |zww
 */
+Route::get('/api/PaymentHistory','App\Http\Controllers\PaymentController@showUserHistory');
 Auth::routes();
 Route::get('{any}', function () {
     return view('welcome', [

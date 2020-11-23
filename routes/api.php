@@ -15,11 +15,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/prepareCheckOut', 'App\Http\Controllers\PaymentController@prepareCheckOut');
-
 Route::get('/paymentStatus','App\Http\Controllers\PaymentController@handlePayment');
 Route::get('/createHistory', ['uses'=>'App\Http\Controllers\PaymentController@storeData']);
 Route::get('/status', 'App\Http\Controllers\PaymentController@handlePayment');
-Route::get('/PaymentHistory','App\Http\Controllers\PaymentController@showUserHistory');
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();

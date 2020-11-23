@@ -2237,20 +2237,25 @@ function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(
 
         if (res.data.result.description.includes('successfully')) {
           _this.status = 1;
-          console.log("its lit");
 
           _this.addToHistory();
         } else {
           _this.addToHistory();
 
-          console.log("its not lit")(_templateObject());
+          _this.status = 0(_templateObject());
         }
       });
     },
     addToHistory: function addToHistory() {
       var _this2 = this;
 
-      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get("/api/createHistory?amount=" + this.amount + "?reference=" + this.references + "?status=" + this.status).then(function (res) {
+      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get("/api/createHistory", {
+        params: {
+          amount: this.amount,
+          reference: this.references,
+          status: this.status
+        }
+      }).then(function (res) {
         console.log(res);
         _this2.added = true;
       })["catch"](function (err) {
@@ -44063,9 +44068,14 @@ var render = function() {
         class: [_vm.status ? "text-success" : "text-danger"]
       },
       [
-        _c("h3", { staticClass: "text-success p-1" }, [
-          _vm._v("Checkout Status")
-        ]),
+        _c(
+          "h3",
+          {
+            staticClass: "p-1",
+            class: [_vm.status ? "text-success" : "text-danger"]
+          },
+          [_vm._v("Checkout Status")]
+        ),
         _vm._v(" "),
         _c("h3", { staticClass: "text-bold pb-1" }, [
           _vm._v("Result Code: " + _vm._s(_vm.paymentData.code))
@@ -44077,10 +44087,13 @@ var render = function() {
         _vm._v(" "),
         _c("h3", { staticClass: "pb-2" }),
         _vm._v(" "),
-        _c("button", { staticClass: "btn btn-danger align-end" }, [
-          _vm._v("Close")
-        ])
-      ]
+        _c(
+          "router-link",
+          { staticClass: "btn btn-danger align-end", attrs: { to: "/home" } },
+          [_vm._v("RETURN")]
+        )
+      ],
+      1
     )
   ])
 }
