@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 use App\Models\User;
@@ -13,10 +15,14 @@ use App\Models\User;
 | contains the "web" middleware group. Now create something great!
 |zww
 */
+Auth::routes();
+Route::get('{any}', function () {
+    return view('welcome', [
+        'auth_user' => Auth::user()
+    ]);
+})->where('any', '.*');
 
-Route::get('/submitPayment', 'App\Http\Controllers\PaymentController@submitPayment');
 
-Route::get('/api/PaymentHistory','App\Http\Controllers\PaymentController@showUserHistory');
 
 Route::get('/', function () {
     return view('welcome', [
@@ -29,7 +35,7 @@ Route::get('/home', function () {
     ]);
 });
 
-Auth::routes();
+
 
 
 

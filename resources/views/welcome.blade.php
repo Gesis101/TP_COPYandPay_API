@@ -16,7 +16,7 @@
     <div class="collapse navbar-collapse" id="navbarCollapse">
       <ul class="navbar-nav justify-content-end">
         <li class="nav-item">
-          <router-link class="nav-link" to="/Home">Home</router-link>
+          <router-link class="nav-link" to="/home">Home</router-link>
         </li>
         @guest
             @if (Route::has('login'))
@@ -54,6 +54,8 @@
   </nav>
     <router-view></router-view>
 @endsection
+
+
 <script>
     window.auth_user = {!! json_encode($auth_user); !!};
 </script>

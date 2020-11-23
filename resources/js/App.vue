@@ -27,7 +27,7 @@ export default {
     },
   },
   components: {
-    Home,
+    'Home': Home,
   },
 };
 </script>

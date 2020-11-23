@@ -1,8 +1,8 @@
 import Home from './components/Home'
 import loginVue from './components/login'
-
+import Payment from "./components/Payment";
 export default{
-    mode: 'history', 
+    mode: 'history',
 
     routes: [
         {
@@ -12,6 +12,11 @@ export default{
         {
             path: '/loginVue',
             component: loginVue
+        },
+        {
+            path: '/paymentStatus',
+            name: 'paymentStatus',
+            component: Payment
         }
     ]
 }

@@ -121,6 +121,7 @@ module.exports = __webpack_require__(/*! ./lib/axios */ "./node_modules/axios/li
 
 var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
 var settle = __webpack_require__(/*! ./../core/settle */ "./node_modules/axios/lib/core/settle.js");
+var cookies = __webpack_require__(/*! ./../helpers/cookies */ "./node_modules/axios/lib/helpers/cookies.js");
 var buildURL = __webpack_require__(/*! ./../helpers/buildURL */ "./node_modules/axios/lib/helpers/buildURL.js");
 var buildFullPath = __webpack_require__(/*! ../core/buildFullPath */ "./node_modules/axios/lib/core/buildFullPath.js");
 var parseHeaders = __webpack_require__(/*! ./../helpers/parseHeaders */ "./node_modules/axios/lib/helpers/parseHeaders.js");
@@ -141,7 +142,7 @@ module.exports = function xhrAdapter(config) {
     // HTTP basic authentication
     if (config.auth) {
       var username = config.auth.username || '';
-      var password = config.auth.password || '';
+      var password = config.auth.password ? unescape(encodeURIComponent(config.auth.password)) : '';
       requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);
     }
 
@@ -222,8 +223,6 @@ module.exports = function xhrAdapter(config) {
     // This is only done if running in a standard browser environment.
     // Specifically not if we're in a web worker, or react-native.
     if (utils.isStandardBrowserEnv()) {
-      var cookies = __webpack_require__(/*! ./../helpers/cookies */ "./node_modules/axios/lib/helpers/cookies.js");
-
       // Add xsrf header
       var xsrfValue = (config.withCredentials || isURLSameOrigin(fullPath)) && config.xsrfCookieName ?
         cookies.read(config.xsrfCookieName) :
@@ -289,7 +288,7 @@ module.exports = function xhrAdapter(config) {
       });
     }
 
-    if (requestData === undefined) {
+    if (!requestData) {
       requestData = null;
     }
 
@@ -566,9 +565,10 @@ Axios.prototype.getUri = function getUri(config) {
 utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, config) {
-    return this.request(utils.merge(config || {}, {
+    return this.request(mergeConfig(config || {}, {
       method: method,
-      url: url
+      url: url,
+      data: (config || {}).data
     }));
   };
 });
@@ -576,7 +576,7 @@ utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData
 utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, data, config) {
-    return this.request(utils.merge(config || {}, {
+    return this.request(mergeConfig(config || {}, {
       method: method,
       url: url,
       data: data
@@ -836,7 +836,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   error.response = response;
   error.isAxiosError = true;
 
-  error.toJSON = function() {
+  error.toJSON = function toJSON() {
     return {
       // Standard
       message: this.message,
@@ -885,59 +885,73 @@ module.exports = function mergeConfig(config1, config2) {
   config2 = config2 || {};
   var config = {};
 
-  var valueFromConfig2Keys = ['url', 'method', 'params', 'data'];
-  var mergeDeepPropertiesKeys = ['headers', 'auth', 'proxy'];
+  var valueFromConfig2Keys = ['url', 'method', 'data'];
+  var mergeDeepPropertiesKeys = ['headers', 'auth', 'proxy', 'params'];
   var defaultToConfig2Keys = [
-    'baseURL', 'url', 'transformRequest', 'transformResponse', 'paramsSerializer',
-    'timeout', 'withCredentials', 'adapter', 'responseType', 'xsrfCookieName',
-    'xsrfHeaderName', 'onUploadProgress', 'onDownloadProgress',
-    'maxContentLength', 'validateStatus', 'maxRedirects', 'httpAgent',
-    'httpsAgent', 'cancelToken', 'socketPath'
+    'baseURL', 'transformRequest', 'transformResponse', 'paramsSerializer',
+    'timeout', 'timeoutMessage', 'withCredentials', 'adapter', 'responseType', 'xsrfCookieName',
+    'xsrfHeaderName', 'onUploadProgress', 'onDownloadProgress', 'decompress',
+    'maxContentLength', 'maxBodyLength', 'maxRedirects', 'transport', 'httpAgent',
+    'httpsAgent', 'cancelToken', 'socketPath', 'responseEncoding'
   ];
+  var directMergeKeys = ['validateStatus'];
+
+  function getMergedValue(target, source) {
+    if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
+      return utils.merge(target, source);
+    } else if (utils.isPlainObject(source)) {
+      return utils.merge({}, source);
+    } else if (utils.isArray(source)) {
+      return source.slice();
+    }
+    return source;
+  }
+
+  function mergeDeepProperties(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(config1[prop], config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
+    }
+  }
 
   utils.forEach(valueFromConfig2Keys, function valueFromConfig2(prop) {
-    if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(undefined, config2[prop]);
     }
   });
 
-  utils.forEach(mergeDeepPropertiesKeys, function mergeDeepProperties(prop) {
-    if (utils.isObject(config2[prop])) {
-      config[prop] = utils.deepMerge(config1[prop], config2[prop]);
-    } else if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
-    } else if (utils.isObject(config1[prop])) {
-      config[prop] = utils.deepMerge(config1[prop]);
-    } else if (typeof config1[prop] !== 'undefined') {
-      config[prop] = config1[prop];
-    }
-  });
+  utils.forEach(mergeDeepPropertiesKeys, mergeDeepProperties);
 
   utils.forEach(defaultToConfig2Keys, function defaultToConfig2(prop) {
-    if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
-    } else if (typeof config1[prop] !== 'undefined') {
-      config[prop] = config1[prop];
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(undefined, config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
+    }
+  });
+
+  utils.forEach(directMergeKeys, function merge(prop) {
+    if (prop in config2) {
+      config[prop] = getMergedValue(config1[prop], config2[prop]);
+    } else if (prop in config1) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
     }
   });
 
   var axiosKeys = valueFromConfig2Keys
     .concat(mergeDeepPropertiesKeys)
-    .concat(defaultToConfig2Keys);
+    .concat(defaultToConfig2Keys)
+    .concat(directMergeKeys);
 
   var otherKeys = Object
-    .keys(config2)
+    .keys(config1)
+    .concat(Object.keys(config2))
     .filter(function filterAxiosKeys(key) {
       return axiosKeys.indexOf(key) === -1;
     });
 
-  utils.forEach(otherKeys, function otherKeysDefaultToConfig2(prop) {
-    if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
-    } else if (typeof config1[prop] !== 'undefined') {
-      config[prop] = config1[prop];
-    }
-  });
+  utils.forEach(otherKeys, mergeDeepProperties);
 
   return config;
 };
@@ -966,7 +980,7 @@ var createError = __webpack_require__(/*! ./createError */ "./node_modules/axios
  */
 module.exports = function settle(resolve, reject, response) {
   var validateStatus = response.config.validateStatus;
-  if (!validateStatus || validateStatus(response.status)) {
+  if (!response.status || !validateStatus || validateStatus(response.status)) {
     resolve(response);
   } else {
     reject(createError(
@@ -1098,6 +1112,7 @@ var defaults = {
   xsrfHeaderName: 'X-XSRF-TOKEN',
 
   maxContentLength: -1,
+  maxBodyLength: -1,
 
   validateStatus: function validateStatus(status) {
     return status >= 200 && status < 300;
@@ -1161,7 +1176,6 @@ var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/util
 
 function encode(val) {
   return encodeURIComponent(val).
-    replace(/%40/gi, '@').
     replace(/%3A/gi, ':').
     replace(/%24/g, '$').
     replace(/%2C/gi, ',').
@@ -1671,6 +1685,21 @@ function isObject(val) {
 }
 
 /**
+ * Determine if a value is a plain Object
+ *
+ * @param {Object} val The value to test
+ * @return {boolean} True if value is a plain Object, otherwise false
+ */
+function isPlainObject(val) {
+  if (toString.call(val) !== '[object Object]') {
+    return false;
+  }
+
+  var prototype = Object.getPrototypeOf(val);
+  return prototype === null || prototype === Object.prototype;
+}
+
+/**
  * Determine if a value is a Date
  *
  * @param {Object} val The value to test
@@ -1826,34 +1855,12 @@ function forEach(obj, fn) {
 function merge(/* obj1, obj2, obj3, ... */) {
   var result = {};
   function assignValue(val, key) {
-    if (typeof result[key] === 'object' && typeof val === 'object') {
+    if (isPlainObject(result[key]) && isPlainObject(val)) {
       result[key] = merge(result[key], val);
-    } else {
-      result[key] = val;
-    }
-  }
-
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    forEach(arguments[i], assignValue);
-  }
-  return result;
-}
-
-/**
- * Function equal to merge with the difference being that no reference
- * to original objects is kept.
- *
- * @see merge
- * @param {Object} obj1 Object to merge
- * @returns {Object} Result of all merge properties
- */
-function deepMerge(/* obj1, obj2, obj3, ... */) {
-  var result = {};
-  function assignValue(val, key) {
-    if (typeof result[key] === 'object' && typeof val === 'object') {
-      result[key] = deepMerge(result[key], val);
-    } else if (typeof val === 'object') {
-      result[key] = deepMerge({}, val);
+    } else if (isPlainObject(val)) {
+      result[key] = merge({}, val);
+    } else if (isArray(val)) {
+      result[key] = val.slice();
     } else {
       result[key] = val;
     }
@@ -1884,6 +1891,19 @@ function extend(a, b, thisArg) {
   return a;
 }
 
+/**
+ * Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
+ *
+ * @param {string} content with BOM
+ * @return {string} content value without BOM
+ */
+function stripBOM(content) {
+  if (content.charCodeAt(0) === 0xFEFF) {
+    content = content.slice(1);
+  }
+  return content;
+}
+
 module.exports = {
   isArray: isArray,
   isArrayBuffer: isArrayBuffer,
@@ -1893,6 +1913,7 @@ module.exports = {
   isString: isString,
   isNumber: isNumber,
   isObject: isObject,
+  isPlainObject: isPlainObject,
   isUndefined: isUndefined,
   isDate: isDate,
   isFile: isFile,
@@ -1903,9 +1924,9 @@ module.exports = {
   isStandardBrowserEnv: isStandardBrowserEnv,
   forEach: forEach,
   merge: merge,
-  deepMerge: deepMerge,
   extend: extend,
-  trim: trim
+  trim: trim,
+  stripBOM: stripBOM
 };
 
 
@@ -2000,7 +2021,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }
   },
   components: {
-    Home: _components_Home_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
+    'Home': _components_Home_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
   }
 });
 
@@ -2058,7 +2079,6 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
-//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -2071,33 +2091,50 @@ __webpack_require__.r(__webpack_exports__);
       success: false,
       results: {},
       history: {},
-      uniqueRef: true
+      uniqueRef: true,
+      prepCheckOutID: ""
     };
   },
   methods: {
-    //Calls Laravel route /submitPayment with user params
-    submitPayment: function submitPayment() {
+    //Calls Laravel route /prepareCheckOut with user params
+    prepareCheckOut: function prepareCheckOut() {
       var _this = this;
 
       this.errors = {};
-      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get("/submitPayment", {
+      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get("/api/prepareCheckOut", {
         params: {
           amount: this.fields.amount,
           referenceID: this.fields.reference
         }
       }).then(function (response) {
-        _this.fields = {}; //Clear input field values
-
+        _this.prepCheckOutID = response.data.id;
+        console.log(_this.prepCheckOutID);
         _this.results = {
           code: response.data.result.code,
           reference: response.data.result.description
         }; //Passes response data to Vue object
 
         _this.success = true;
+
+        _this.createPaymentForm();
+
+        _this.fields = {}; //Clear input field values
       })["catch"](function (error) {
         //Catch any error during async
         _this.errors = error.response.data.errors || {};
         _this.err = true;
+      });
+    },
+    createPaymentForm: function createPaymentForm() {
+      var _this2 = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get("https://test.oppwa.com/v1/paymentWidgets.js?checkoutId=".concat(this.prepCheckOutID)).then(function (res) {
+        console.log(res);
+        var APIScript = document.createElement("script");
+        APIScript.setAttribute("src", "https://test.oppwa.com/v1/paymentWidgets.js?checkoutId=".concat(_this2.prepCheckOutID));
+        document.head.appendChild(APIScript);
+      })["catch"](function (err) {
+        console.log("prep payment form" + err);
       });
     },
     closeAlert: function closeAlert() {
@@ -2106,14 +2143,11 @@ __webpack_require__.r(__webpack_exports__);
     closeErrAlert: function closeErrAlert() {
       this.err = false;
     },
-    closeRefAlert: function closeRefAlert() {
-      this.uniqueRef = true;
-    },
     getUserHistory: function getUserHistory() {
-      var _this2 = this;
+      var _this3 = this;
 
-      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get('/api/PaymentHistory').then(function (res) {
-        _this2.history = res.data;
+      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get("/api/PaymentHistory").then(function (res) {
+        _this3.history = res.data;
       })["catch"](function (err) {
         console.log(err);
       });
@@ -2122,17 +2156,108 @@ __webpack_require__.r(__webpack_exports__);
       for (var i = 0; i < this.history.length; i++) {
         if (this.history[i].reference == this.fields.reference) {
           this.uniqueRef = false;
-          console.log('true' + this.history[i].reference);
           break;
         } else {
           this.uniqueRef = true;
-          console.log('nh');
         }
       }
     }
   },
   created: function created() {
     this.getUserHistory();
+  }
+});
+
+/***/ }),
+
+/***/ "./node_modules/babel-loader/lib/index.js?!./node_modules/vue-loader/lib/index.js?!./resources/js/components/Payment.vue?vue&type=script&lang=js&":
+/*!******************************************************************************************************************************************************************!*\
+  !*** ./node_modules/babel-loader/lib??ref--4-0!./node_modules/vue-loader/lib??vue-loader-options!./resources/js/components/Payment.vue?vue&type=script&lang=js& ***!
+  \******************************************************************************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_0__);
+function _templateObject() {
+  var data = _taggedTemplateLiteral([""]);
+
+  _templateObject = function _templateObject() {
+    return data;
+  };
+
+  return data;
+}
+
+function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  name: "Payment",
+  data: function data() {
+    return {
+      paymentData: {},
+      amount: {},
+      references: {},
+      added: false,
+      status: 0
+    };
+  },
+  created: function created() {
+    //this.test(),
+    this.getStatus();
+  },
+  methods: {
+    getStatus: function getStatus() {
+      var _this = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get('/api/status/?id=' + this.$route.query.id).then(function (res) {
+        console.log(res.data);
+        _this.amount = res.data.amount;
+        _this.references = res.data.merchantTransactionId;
+        _this.paymentData = {
+          description: res.data.result.description,
+          code: res.data.result.code
+        };
+
+        if (res.data.result.description.includes('successfully')) {
+          _this.status = 1;
+          console.log("its lit");
+
+          _this.addToHistory();
+        } else {
+          _this.addToHistory();
+
+          console.log("its not lit")(_templateObject());
+        }
+      });
+    },
+    addToHistory: function addToHistory() {
+      var _this2 = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_0___default.a.get("/api/createHistory?amount=" + this.amount + "?reference=" + this.references + "?status=" + this.status).then(function (res) {
+        console.log(res);
+        _this2.added = true;
+      })["catch"](function (err) {
+        _this2.added = false;
+        console.log(err);
+      });
+    }
   }
 });
 
@@ -43697,14 +43822,14 @@ var render = function() {
           { staticClass: "text-center successMsg bg-light rounded shadow" },
           [
             _c("h3", { staticClass: "text-success p-1" }, [
-              _vm._v("Transaction Added")
+              _vm._v("Checkout Status")
             ]),
             _vm._v(" "),
             _c("h3", { staticClass: "text-bold pb-1" }, [
-              _vm._v("Result Code: " + _vm._s(_vm.results.code) + " ")
+              _vm._v("Result Code: " + _vm._s(_vm.results.code))
             ]),
             _vm._v(" "),
-            _c("h3", { staticClass: "text-bold " }, [_vm._v("Description:")]),
+            _c("h3", { staticClass: "text-bold" }, [_vm._v("Description:")]),
             _vm._v(" "),
             _c("h3", { staticClass: "pb-2" }, [
               _vm._v(_vm._s(_vm.results.reference))
@@ -43732,14 +43857,14 @@ var render = function() {
           { staticClass: "text-center successMsg bg-light rounded shadow" },
           [
             _c("h3", { staticClass: "text-danger p-1" }, [
-              _vm._v("Transaction Failed")
+              _vm._v("Checkout failed")
             ]),
             _vm._v(" "),
             _c("h3", { staticClass: "text-bold pb-1" }, [
-              _vm._v("Result Code: " + _vm._s(_vm.results.code) + " ")
+              _vm._v("Result Code: " + _vm._s(_vm.results.code))
             ]),
             _vm._v(" "),
-            _c("h3", { staticClass: "text-bold " }, [_vm._v("Description:")]),
+            _c("h3", { staticClass: "text-bold" }, [_vm._v("Description:")]),
             _vm._v(" "),
             _c("h3", { staticClass: "pb-2" }, [
               _vm._v(_vm._s(_vm.results.reference))
@@ -43761,6 +43886,11 @@ var render = function() {
         )
       : _vm._e(),
     _vm._v(" "),
+    _c("form", {
+      staticClass: "paymentWidgets",
+      attrs: { action: "/paymentStatus", "data-brands": "VISA MASTER AMEX" }
+    }),
+    _vm._v(" "),
     _c(
       "form",
       {
@@ -43769,7 +43899,7 @@ var render = function() {
           submit: [
             function($event) {
               $event.preventDefault()
-              return _vm.submitPayment($event)
+              return _vm.prepareCheckOut($event)
             },
             _vm.getUserHistory
           ]
@@ -43813,11 +43943,7 @@ var render = function() {
               class: [_vm.uniqueRef ? "invisible" : "visible"],
               attrs: { role: "alert" }
             },
-            [
-              _vm._v(
-                "\n            Please enter a unique referenceID\n        "
-              )
-            ]
+            [_vm._v("Please enter a unique referenceID")]
           ),
           _vm._v(" "),
           _vm.errors && _vm.errors.name
@@ -43883,7 +44009,7 @@ var render = function() {
                 "div",
                 {
                   key: history.id,
-                  staticClass: "alert ",
+                  staticClass: "alert",
                   class: [
                     history.result === 1 ? "alert-success" : "alert-danger"
                   ],
@@ -43891,13 +44017,12 @@ var render = function() {
                 },
                 [
                   _vm._v(
-                    "\n           Date: " +
+                    "Date: " +
                       _vm._s(history.created_at) +
                       " . Amount: £" +
                       _vm._s(history.amount) +
                       " . Reference: " +
-                      _vm._s(history.reference) +
-                      "\n        "
+                      _vm._s(history.reference)
                   )
                 ]
               )
@@ -43906,6 +44031,57 @@ var render = function() {
           2
         )
       : _vm._e()
+  ])
+}
+var staticRenderFns = []
+render._withStripped = true
+
+
+
+/***/ }),
+
+/***/ "./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./resources/js/components/Payment.vue?vue&type=template&id=7bace86b&":
+/*!**********************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options!./resources/js/components/Payment.vue?vue&type=template&id=7bace86b& ***!
+  \**********************************************************************************************************************************************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "render", function() { return render; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "staticRenderFns", function() { return staticRenderFns; });
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("div", { staticClass: "text-2x1 text-gray-800 center_div" }, [
+    _c(
+      "div",
+      {
+        staticClass: "text-center successMsg2 bg-light rounded shadow",
+        class: [_vm.status ? "text-success" : "text-danger"]
+      },
+      [
+        _c("h3", { staticClass: "text-success p-1" }, [
+          _vm._v("Checkout Status")
+        ]),
+        _vm._v(" "),
+        _c("h3", { staticClass: "text-bold pb-1" }, [
+          _vm._v("Result Code: " + _vm._s(_vm.paymentData.code))
+        ]),
+        _vm._v(" "),
+        _c("h3", { staticClass: "text-bold" }, [
+          _vm._v("Description: " + _vm._s(_vm.paymentData.description))
+        ]),
+        _vm._v(" "),
+        _c("h3", { staticClass: "pb-2" }),
+        _vm._v(" "),
+        _c("button", { staticClass: "btn btn-danger align-end" }, [
+          _vm._v("Close")
+        ])
+      ]
+    )
   ])
 }
 var staticRenderFns = []
@@ -59356,6 +59532,75 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./resources/js/components/Payment.vue":
+/*!*********************************************!*\
+  !*** ./resources/js/components/Payment.vue ***!
+  \*********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _Payment_vue_vue_type_template_id_7bace86b___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Payment.vue?vue&type=template&id=7bace86b& */ "./resources/js/components/Payment.vue?vue&type=template&id=7bace86b&");
+/* harmony import */ var _Payment_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Payment.vue?vue&type=script&lang=js& */ "./resources/js/components/Payment.vue?vue&type=script&lang=js&");
+/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js");
+
+
+
+
+
+/* normalize component */
+
+var component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__["default"])(
+  _Payment_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__["default"],
+  _Payment_vue_vue_type_template_id_7bace86b___WEBPACK_IMPORTED_MODULE_0__["render"],
+  _Payment_vue_vue_type_template_id_7bace86b___WEBPACK_IMPORTED_MODULE_0__["staticRenderFns"],
+  false,
+  null,
+  null,
+  null
+  
+)
+
+/* hot reload */
+if (false) { var api; }
+component.options.__file = "resources/js/components/Payment.vue"
+/* harmony default export */ __webpack_exports__["default"] = (component.exports);
+
+/***/ }),
+
+/***/ "./resources/js/components/Payment.vue?vue&type=script&lang=js&":
+/*!**********************************************************************!*\
+  !*** ./resources/js/components/Payment.vue?vue&type=script&lang=js& ***!
+  \**********************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_babel_loader_lib_index_js_ref_4_0_node_modules_vue_loader_lib_index_js_vue_loader_options_Payment_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../node_modules/babel-loader/lib??ref--4-0!../../../node_modules/vue-loader/lib??vue-loader-options!./Payment.vue?vue&type=script&lang=js& */ "./node_modules/babel-loader/lib/index.js?!./node_modules/vue-loader/lib/index.js?!./resources/js/components/Payment.vue?vue&type=script&lang=js&");
+/* empty/unused harmony star reexport */ /* harmony default export */ __webpack_exports__["default"] = (_node_modules_babel_loader_lib_index_js_ref_4_0_node_modules_vue_loader_lib_index_js_vue_loader_options_Payment_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__["default"]); 
+
+/***/ }),
+
+/***/ "./resources/js/components/Payment.vue?vue&type=template&id=7bace86b&":
+/*!****************************************************************************!*\
+  !*** ./resources/js/components/Payment.vue?vue&type=template&id=7bace86b& ***!
+  \****************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_Payment_vue_vue_type_template_id_7bace86b___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!../../../node_modules/vue-loader/lib??vue-loader-options!./Payment.vue?vue&type=template&id=7bace86b& */ "./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./resources/js/components/Payment.vue?vue&type=template&id=7bace86b&");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "render", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_Payment_vue_vue_type_template_id_7bace86b___WEBPACK_IMPORTED_MODULE_0__["render"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "staticRenderFns", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_Payment_vue_vue_type_template_id_7bace86b___WEBPACK_IMPORTED_MODULE_0__["staticRenderFns"]; });
+
+
+
+/***/ }),
+
 /***/ "./resources/js/components/login.vue":
 /*!*******************************************!*\
   !*** ./resources/js/components/login.vue ***!
@@ -59436,6 +59681,8 @@ __webpack_require__.r(__webpack_exports__);
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_Home__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./components/Home */ "./resources/js/components/Home.vue");
 /* harmony import */ var _components_login__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./components/login */ "./resources/js/components/login.vue");
+/* harmony import */ var _components_Payment__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/Payment */ "./resources/js/components/Payment.vue");
+
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -59446,6 +59693,10 @@ __webpack_require__.r(__webpack_exports__);
   }, {
     path: '/loginVue',
     component: _components_login__WEBPACK_IMPORTED_MODULE_1__["default"]
+  }, {
+    path: '/paymentStatus',
+    name: 'paymentStatus',
+    component: _components_Payment__WEBPACK_IMPORTED_MODULE_2__["default"]
   }]
 });
 

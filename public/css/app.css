@@ -41747,6 +41747,19 @@ video {
   height: 150px;
   /* Assign a value */
   margin: auto;
+  z-index: 1000;
+}
+
+.successMsg2 {
+  position: absolute;
+  top: 150px;
+  left: 0;
+  right: 0;
+  width: 300px;
+  /* Assign a value */
+  height: 150px;
+  /* Assign a value */
+  margin: auto;
 }
 
 @media (min-width: 640px){
